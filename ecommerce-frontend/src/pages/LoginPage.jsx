@@ -1,110 +1,98 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { login, reset } from '../redux/slices/authSlice';
+import { login } from '../redux/slices/userSlice';
+import Loader from '../components/Loader';
+import Message from '../components/Message';
+import { Helmet } from 'react-helmet-async';
+import { FaUser, FaLock } from 'react-icons/fa';
 
 const LoginPage = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-
-  const { email, password } = formData;
-  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
   const dispatch = useDispatch();
-
-  const { user, isLoading, isError, isSuccess, message } = useSelector(
-    (state) => state.auth
-  );
-
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const { loading, error, userInfo } = useSelector((state) => state.user);
+  
+  const redirect = location.search ? location.search.split('=')[1] : '/';
+  
   useEffect(() => {
-    if (isSuccess || user) {
-      navigate('/');
+    if (userInfo) {
+      navigate(redirect);
     }
-
-    dispatch(reset());
-  }, [user, isSuccess, navigate, dispatch]);
-
-  const onChange = (e) => {
-    setFormData((prevState) => ({
-      ...prevState,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const onSubmit = (e) => {
+  }, [navigate, userInfo, redirect]);
+  
+  const submitHandler = (e) => {
     e.preventDefault();
-
-    const userData = {
-      email,
-      password,
-    };
-
-    dispatch(login(userData));
+    dispatch(login({ email, password }));
   };
-
+  
   return (
-    <div className="container mx-auto px-4 py-8 max-w-md">
-      <h1 className="text-3xl font-bold mb-6 text-center">Sign In</h1>
-
-      {isError && (
-        <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
-          {message}
-        </div>
-      )}
-
-      <form onSubmit={onSubmit} className="bg-white p-6 rounded-lg shadow-md">
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="email">
-            Email Address
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={email}
-            onChange={onChange}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-gray-700 mb-2" htmlFor="password">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={password}
-            onChange={onChange}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <div className="flex justify-center items-center">
-              <div className="animate-spin h-5 w-5 border-t-2 border-b-2 border-white rounded-full mr-2"></div>
-              Loading...
+    <div className="container mx-auto px-4 max-w-md">
+      <Helmet>
+        <title>Sign In | ShopMERN</title>
+      </Helmet>
+      
+      <div className="bg-white rounded-lg shadow-md p-8">
+        <h1 className="text-2xl font-bold mb-6 text-center">Sign In</h1>
+        
+        {error && <Message variant="danger">{error}</Message>}
+        {loading && <Loader />}
+        
+        <form onSubmit={submitHandler}>
+          <div className="mb-4">
+            <label htmlFor="email" className="form-label">Email Address</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                <FaUser />
+              </div>
+              <input
+                type="email"
+                id="email"
+                placeholder="Enter email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="form-control pl-10"
+                required
+              />
             </div>
-          ) : (
-            'Sign In'
-          )}
-        </button>
-      </form>
-
-      <div className="mt-4 text-center">
-        New Customer?{' '}
-        <Link to="/register" className="text-blue-500 hover:underline">
-          Register
-        </Link>
+          </div>
+          
+          <div className="mb-6">
+            <label htmlFor="password" className="form-label">Password</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                <FaLock />
+              </div>
+              <input
+                type="password"
+                id="password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="form-control pl-10"
+                required
+              />
+            </div>
+          </div>
+          
+          <button type="submit" className="btn btn-primary w-full mb-4">
+            Sign In
+          </button>
+          
+          <div className="text-center">
+            New Customer?{' '}
+            <Link
+              to={redirect ? `/register?redirect=${redirect}` : '/register'}
+              className="text-primary-600 hover:underline"
+            >
+              Register
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );

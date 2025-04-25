@@ -7,7 +7,9 @@ const initialState = {
   shippingAddress: localStorage.getItem('shippingAddress')
     ? JSON.parse(localStorage.getItem('shippingAddress'))
     : {},
-  paymentMethod: 'PayPal',
+  paymentMethod: localStorage.getItem('paymentMethod')
+    ? JSON.parse(localStorage.getItem('paymentMethod'))
+    : '',
 };
 
 const cartSlice = createSlice({
@@ -16,8 +18,11 @@ const cartSlice = createSlice({
   reducers: {
     addToCart: (state, action) => {
       const item = action.payload;
-      const existItem = state.cartItems.find((x) => x.product === item.product);
-
+      
+      const existItem = state.cartItems.find(
+        (x) => x.product === item.product
+      );
+      
       if (existItem) {
         state.cartItems = state.cartItems.map((x) =>
           x.product === existItem.product ? item : x
@@ -25,13 +30,26 @@ const cartSlice = createSlice({
       } else {
         state.cartItems = [...state.cartItems, item];
       }
-
+      
+      // Calculate prices
+      state.itemsPrice = state.cartItems.reduce(
+        (acc, item) => acc + item.price * item.qty,
+        0
+      );
+      
       localStorage.setItem('cartItems', JSON.stringify(state.cartItems));
     },
     removeFromCart: (state, action) => {
       state.cartItems = state.cartItems.filter(
         (x) => x.product !== action.payload
       );
+      
+      // Calculate prices
+      state.itemsPrice = state.cartItems.reduce(
+        (acc, item) => acc + item.price * item.qty,
+        0
+      );
+      
       localStorage.setItem('cartItems', JSON.stringify(state.cartItems));
     },
     saveShippingAddress: (state, action) => {
@@ -49,6 +67,23 @@ const cartSlice = createSlice({
       state.cartItems = [];
       localStorage.removeItem('cartItems');
     },
+    calculatePrices: (state) => {
+      // Calculate items price
+      state.itemsPrice = state.cartItems.reduce(
+        (acc, item) => acc + item.price * item.qty,
+        0
+      );
+      // Calculate shipping price (free shipping for orders over $100)
+      state.shippingPrice = state.itemsPrice > 100 ? 0 : 10;
+      // Calculate tax price (15% tax)
+      state.taxPrice = Number((0.15 * state.itemsPrice).toFixed(2));
+      // Calculate total price
+      state.totalPrice = (
+        Number(state.itemsPrice) +
+        Number(state.shippingPrice) +
+        Number(state.taxPrice)
+      ).toFixed(2);
+    },
   },
 });
 
@@ -58,6 +93,7 @@ export const {
   saveShippingAddress,
   savePaymentMethod,
   clearCartItems,
+  calculatePrices,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

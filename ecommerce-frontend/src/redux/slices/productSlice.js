@@ -1,92 +1,233 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import productService from '../../services/productService';
+import axios from 'axios';
+import { BASE_URL } from '../../../constants.js';
+
+export const fetchProducts = createAsyncThunk(
+  'product/fetchProducts',
+  async ({ keyword = '', pageNumber = 1, category = '' }, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(
+        `${BASE_URL}/api/products?keyword=${keyword}&pageNumber=${pageNumber}&category=${category}`
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message
+      );
+    }
+  }
+);
+
+export const fetchProductDetails = createAsyncThunk(
+  'product/fetchProductDetails',
+  async (id, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${BASE_URL}/api/products/${id}`);
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message
+      );
+    }
+  }
+);
+
+export const fetchTopProducts = createAsyncThunk(
+  'product/fetchTopProducts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${BASE_URL}/api/products/top`);
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message
+      );
+    }
+  }
+);
+
+export const fetchFeaturedProducts = createAsyncThunk(
+  'product/fetchFeaturedProducts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${BASE_URL}/api/products/featured`);
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message
+      );
+    }
+  }
+);
+
+export const fetchCategories = createAsyncThunk(
+  'product/fetchCategories',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${BASE_URL}/api/products/categories`);
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message
+      );
+    }
+  }
+);
+
+export const createProductReview = createAsyncThunk(
+  'product/createProductReview',
+  async ({ productId, review }, { getState, rejectWithValue }) => {
+    try {
+      const {
+        user: { userInfo },
+      } = getState();
+
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      };
+
+      await axios.post(
+        `${BASE_URL}/api/products/${productId}/reviews`,
+        review,
+        config
+      );
+      return { success: true };
+    } catch (error) {
+      return rejectWithValue(
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message
+      );
+    }
+  }
+);
 
 const initialState = {
   products: [],
   product: { reviews: [] },
-  isError: false,
-  isSuccess: false,
-  isLoading: false,
-  message: '',
+  topProducts: [],
+  featuredProducts: [],
+  categories: [],
+  loading: false,
+  error: null,
+  success: false,
+  page: 1,
+  pages: 1,
 };
 
-// Get all products
-export const getProducts = createAsyncThunk(
-  'products/getAll',
-  async (_, thunkAPI) => {
-    try {
-      return await productService.getProducts();
-    } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-      return thunkAPI.rejectWithValue(message);
-    }
-  }
-);
-
-// Get product details
-export const getProductDetails = createAsyncThunk(
-  'products/getDetails',
-  async (id, thunkAPI) => {
-    try {
-      return await productService.getProductDetails(id);
-    } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-      return thunkAPI.rejectWithValue(message);
-    }
-  }
-);
-
-export const productSlice = createSlice({
+const productSlice = createSlice({
   name: 'product',
   initialState,
   reducers: {
-    reset: (state) => {
-      state.isLoading = false;
-      state.isSuccess = false;
-      state.isError = false;
-      state.message = '';
+    resetProductDetails: (state) => {
+      state.product = { reviews: [] };
+      state.success = false;
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getProducts.pending, (state) => {
-        state.isLoading = true;
+      // Fetch products
+      .addCase(fetchProducts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(getProducts.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.isSuccess = true;
-        state.products = action.payload;
+      .addCase(fetchProducts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.products = action.payload.products;
+        state.page = action.payload.page;
+        state.pages = action.payload.pages;
       })
-      .addCase(getProducts.rejected, (state, action) => {
-        state.isLoading = false;
-        state.isError = true;
-        state.message = action.payload;
+      .addCase(fetchProducts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
-      .addCase(getProductDetails.pending, (state) => {
-        state.isLoading = true;
+      
+      // Fetch product details
+      .addCase(fetchProductDetails.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(getProductDetails.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.isSuccess = true;
+      .addCase(fetchProductDetails.fulfilled, (state, action) => {
+        state.loading = false;
         state.product = action.payload;
       })
-      .addCase(getProductDetails.rejected, (state, action) => {
-        state.isLoading = false;
-        state.isError = true;
-        state.message = action.payload;
+      .addCase(fetchProductDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Fetch top products
+      .addCase(fetchTopProducts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTopProducts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.topProducts = action.payload;
+      })
+      .addCase(fetchTopProducts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Fetch featured products
+      .addCase(fetchFeaturedProducts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchFeaturedProducts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.featuredProducts = action.payload;
+      })
+      .addCase(fetchFeaturedProducts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Fetch categories
+      .addCase(fetchCategories.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.loading = false;
+        state.categories = action.payload;
+      })
+      .addCase(fetchCategories.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Create product review
+      .addCase(createProductReview.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createProductReview.fulfilled, (state) => {
+        state.loading = false;
+        state.success = true;
+      })
+      .addCase(createProductReview.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { reset } = productSlice.actions;
+export const { resetProductDetails } = productSlice.actions;
+
 export default productSlice.reducer;
