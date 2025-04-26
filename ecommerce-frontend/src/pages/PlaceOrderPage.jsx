@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { Button } from "../components/ui/button.jsx"
+import { Button } from "../components/ui/Button.jsx"
 import { Card, CardHeader, CardContent } from "../components/ui/Card"
 import Message from '../components/Message.jsx';
 import CheckoutSteps from '../components/CheckoutSteps.jsx';

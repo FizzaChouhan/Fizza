@@ -29,7 +29,7 @@ const ProductCarousel = () => {
             >
               <Link to={`/product/${product._id}`}>
                 <img 
-                  src={product.image || "/placeholder.svg"} 
+                  src={product.imageUrl } 
                   alt={product.name} 
                   className="w-full h-64 md:h-96 object-cover"
                 />

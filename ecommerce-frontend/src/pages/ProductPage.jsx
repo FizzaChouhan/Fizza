@@ -106,7 +106,7 @@ const ProductPage = () => {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
                 <img
-                  src={activeImg || product.image}
+                  src={activeImg || product.imageUrl}
                   alt={product.name}
                   className="w-full h-auto object-contain"
                   style={{ maxHeight: '400px' }}
